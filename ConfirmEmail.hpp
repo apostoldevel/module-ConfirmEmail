@@ -72,6 +72,11 @@ namespace Apostol {
 
             int m_HeartbeatInterval;
 
+            bool m_Native;
+
+            CString m_Redirect;
+            CString m_RedirectError;
+
             void InitMethods() override;
 
             void Authorize();
@@ -97,8 +102,10 @@ namespace Apostol {
                 return new CConfirmEmail(AProcess);
             }
 
-            static void RedirectConfirm(CHTTPServerConnection *AConnection, const CString &Result, const CString &Message);
-            static void RedirectError(CHTTPServerConnection *AConnection, int ErrorCode, const CString &Error, const CString &Message);
+            void RedirectConfirm(CHTTPServerConnection *AConnection, const CString &Result, const CString &Message);
+            void RedirectError(CHTTPServerConnection *AConnection, int ErrorCode, const CString &Error, const CString &Message);
+
+            void Initialization(CModuleProcess *AProcess) override;
 
             void Heartbeat() override;
 

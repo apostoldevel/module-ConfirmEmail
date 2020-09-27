@@ -43,6 +43,7 @@ namespace Apostol {
             CConfirmEmail::InitMethods();
             m_CheckDate = Now();
             m_HeartbeatInterval = 5;
+            m_Native = false;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -135,7 +136,7 @@ namespace Apostol {
 
         void CConfirmEmail::RedirectConfirm(CHTTPServerConnection *AConnection, const CString &Result, const CString &Message) {
 
-            CString Location("/verification/email");
+            CString Location(m_Redirect);
 
             Location << "?result=" << Result;
             Location << "&message=" << CHTTPServer::URLEncode(Message);
@@ -148,7 +149,7 @@ namespace Apostol {
 
         void CConfirmEmail::RedirectError(CHTTPServerConnection *AConnection, int ErrorCode, const CString &Error, const CString &Message) {
 
-            CString ErrorLocation("/verification/email");
+            CString ErrorLocation(m_RedirectError);
 
             ErrorLocation << "?code=" << ErrorCode;
             ErrorLocation << "&error=" << Error;
@@ -225,7 +226,7 @@ namespace Apostol {
 
         void CConfirmEmail::ConfirmEmail(CHTTPServerConnection *AConnection, const CString &Payload) {
 
-            auto OnExecuted = [AConnection](CPQPollQuery *APollQuery) {
+            auto OnExecuted = [this, AConnection](CPQPollQuery *APollQuery) {
 
                 CPQResult *LResult;
 
@@ -252,7 +253,7 @@ namespace Apostol {
                 }
             };
 
-            auto OnException = [AConnection](CPQPollQuery *APollQuery, const Delphi::Exception::Exception &E) {
+            auto OnException = [this, AConnection](CPQPollQuery *APollQuery, const Delphi::Exception::Exception &E) {
                 RedirectError(AConnection, CHTTPReply::internal_server_error, "server_error", E.what());
             };
 
@@ -284,16 +285,44 @@ namespace Apostol {
         void CConfirmEmail::DoGet(CHTTPServerConnection *AConnection) {
             auto LRequest = AConnection->Request();
 
+            CString LPath(LRequest->Location.pathname);
+
+            // Request path must be absolute and not contain "..".
+            if (LPath.empty() || LPath.front() != '/' || LPath.find(_T("..")) != CString::npos) {
+                AConnection->SendStockReply(CHTTPReply::bad_request);
+                return;
+            }
+
             CStringList LRouts;
-            SplitColumns(LRequest->Location.pathname, LRouts, '/');
+            SplitColumns(LPath, LRouts, '/');
 
             if (LRouts.Count() < 3) {
                 AConnection->SendStockReply(CHTTPReply::not_found);
                 return;
             }
 
-            const auto& Code = LRouts[2];
-            ConfirmEmail(AConnection, CString().Format(R"({"code": "%s"})", Code.c_str()));
+            if (m_Native) {
+                const auto& Code = LRouts[2];
+                ConfirmEmail(AConnection, CString().Format(R"({"code": "%s"})", Code.c_str()));
+            } else {
+                LPath.Clear();
+
+                for (int I = 0; I < 2; ++I) {
+                    LPath.Append('/');
+                    LPath.Append(LRouts[I]);
+                }
+                LPath.Append("/index.html");
+
+                SendResource(AConnection, LPath);
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CConfirmEmail::Initialization(CModuleProcess *AProcess) {
+            CApostolModule::Initialization(AProcess);
+            m_Native = Config()->IniFile().ReadBool("worker/ConfirmEmail", "native", false);
+            m_Redirect = Config()->IniFile().ReadString("worker/ConfirmEmail", "redirect_uri", "/verification/email");
+            m_RedirectError = Config()->IniFile().ReadString("worker/ConfirmEmail", "redirect_uri_error", m_Redirect);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -310,7 +339,7 @@ namespace Apostol {
 
         bool CConfirmEmail::Enabled() {
             if (m_ModuleStatus == msUnknown)
-                m_ModuleStatus = Config()->IniFile().ReadBool("worker/ConfirmEmail", "enable", true) ? msEnabled : msDisabled;
+                m_ModuleStatus = Config()->IniFile().ReadBool("worker/ConfirmEmail", "enable", false) ? msEnabled : msDisabled;
             return m_ModuleStatus == msEnabled;
         }
         //--------------------------------------------------------------------------------------------------------------
