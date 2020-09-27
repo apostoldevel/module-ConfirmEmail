@@ -68,14 +68,11 @@ namespace Apostol {
 
             CDateTime m_CheckDate;
 
+            TPairs<CStringList> m_Profiles;
+
             CHTTPProxyManager m_ProxyManager;
 
             int m_HeartbeatInterval;
-
-            bool m_Native;
-
-            CString m_Redirect;
-            CString m_RedirectError;
 
             void InitMethods() override;
 
@@ -102,10 +99,10 @@ namespace Apostol {
                 return new CConfirmEmail(AProcess);
             }
 
-            void LoadConfig(const CString &FileName);
-
             void RedirectConfirm(CHTTPServerConnection *AConnection, const CString &Result, const CString &Message);
             void RedirectError(CHTTPServerConnection *AConnection, int ErrorCode, const CString &Error, const CString &Message);
+
+            static void InitConfig(const CIniFile &IniFile, const CString &Profile, CStringList &Config);
 
             void Initialization(CModuleProcess *AProcess) override;
 
