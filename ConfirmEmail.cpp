@@ -39,7 +39,9 @@ namespace Apostol {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CConfirmEmail::CConfirmEmail(CModuleProcess *AProcess) : CApostolModule(AProcess, "confirm email") {
+        CConfirmEmail::CConfirmEmail(CModuleProcess *AProcess) : CApostolModule(AProcess,
+                "confirm email", "worker/ConfirmEmail") {
+
             CConfirmEmail::InitMethods();
             m_CheckDate = Now();
             m_HeartbeatInterval = 5;
@@ -69,6 +71,37 @@ namespace Apostol {
             m_pMethods->AddObject(_T("PATCH")  , (CObject *) new CMethodHandler(false, std::bind(&CConfirmEmail::MethodNotAllowed, this, _1)));
             m_pMethods->AddObject(_T("CONNECT"), (CObject *) new CMethodHandler(false, std::bind(&CConfirmEmail::MethodNotAllowed, this, _1)));
 #endif
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CConfirmEmail::LoadConfig(const CString &FileName) {
+
+            const CString Prefix(Config()->Prefix());
+            CString ConfigFile(FileName);
+
+            if (!path_separator(ConfigFile.front())) {
+                ConfigFile = Prefix + ConfigFile;
+            }
+
+            LPCTSTR lpSectionName = "main";
+            LPCTSTR lpDefaultUri = "/verification/email";
+
+            if (FileExists(ConfigFile.c_str())) {
+                CIniFile IniFile(ConfigFile.c_str());
+                IniFile.OnIniFileParseError(OnIniFileParseError);
+
+                m_Native = IniFile.ReadBool(lpSectionName, "native", false);
+                m_Redirect = IniFile.ReadString(lpSectionName, "redirect_uri", lpDefaultUri);
+                m_RedirectError = IniFile.ReadString(lpSectionName, "redirect_uri_error", m_Redirect);
+
+            } else {
+
+                m_Native = false;
+                m_Redirect = lpDefaultUri;
+                m_RedirectError = lpDefaultUri;
+
+                Log()->Error(APP_LOG_EMERG, 0, APP_FILE_NOT_FOUND, ConfigFile.c_str());
+            }
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -320,9 +353,7 @@ namespace Apostol {
 
         void CConfirmEmail::Initialization(CModuleProcess *AProcess) {
             CApostolModule::Initialization(AProcess);
-            m_Native = Config()->IniFile().ReadBool("worker/ConfirmEmail", "native", false);
-            m_Redirect = Config()->IniFile().ReadString("worker/ConfirmEmail", "redirect_uri", "/verification/email");
-            m_RedirectError = Config()->IniFile().ReadString("worker/ConfirmEmail", "redirect_uri_error", m_Redirect);
+            LoadConfig(Config()->IniFile().ReadString(SectionName().c_str(), "config", "conf/confirm_email.conf"));
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -339,7 +370,7 @@ namespace Apostol {
 
         bool CConfirmEmail::Enabled() {
             if (m_ModuleStatus == msUnknown)
-                m_ModuleStatus = Config()->IniFile().ReadBool("worker/ConfirmEmail", "enable", false) ? msEnabled : msDisabled;
+                m_ModuleStatus = Config()->IniFile().ReadBool(SectionName().c_str(), "enable", false) ? msEnabled : msDisabled;
             return m_ModuleStatus == msEnabled;
         }
         //--------------------------------------------------------------------------------------------------------------

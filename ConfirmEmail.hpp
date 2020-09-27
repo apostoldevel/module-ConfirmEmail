@@ -102,6 +102,8 @@ namespace Apostol {
                 return new CConfirmEmail(AProcess);
             }
 
+            void LoadConfig(const CString &FileName);
+
             void RedirectConfirm(CHTTPServerConnection *AConnection, const CString &Result, const CString &Message);
             void RedirectError(CHTTPServerConnection *AConnection, int ErrorCode, const CString &Error, const CString &Message);
 
