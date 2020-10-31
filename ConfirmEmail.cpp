@@ -138,7 +138,7 @@ namespace Apostol {
 
         void CConfirmEmail::RedirectConfirm(CHTTPServerConnection *AConnection, const CString &Result, const CString &Message) {
 
-            const auto& uri = m_Profiles["redirect"].Value()["uri"];
+            const auto& uri = m_Profiles["redirect"]["uri"];
 
             CString Location(uri);
 
@@ -153,7 +153,7 @@ namespace Apostol {
 
         void CConfirmEmail::RedirectError(CHTTPServerConnection *AConnection, int ErrorCode, const CString &Error, const CString &Message) {
 
-            const auto& error_uri = m_Profiles["redirect"].Value()["error_uri"];
+            const auto& error_uri = m_Profiles["redirect"]["error_uri"];
 
             CString ErrorLocation(error_uri);
 
@@ -307,7 +307,7 @@ namespace Apostol {
                 return;
             }
 
-            const auto& mode = m_Profiles["main"].Value()["mode"];
+            const auto& mode = m_Profiles["main"]["mode"];
 
             if (mode == "native") {
                 const auto& Code = LRouts[2];
