@@ -45,7 +45,7 @@ namespace Apostol {
             CConfirmEmail::InitMethods();
 
             m_CheckDate = Now();
-            m_HeartbeatInterval = 5;
+            m_HeartbeatInterval = 5000;
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -190,13 +190,13 @@ namespace Apostol {
                         m_CheckDate = Now() + (CDateTime) 23 * 60 / MinsPerDay;
                     }
                 } catch (Delphi::Exception::Exception &E) {
-                    m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / SecsPerDay;
+                    m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / MSecsPerDay;
                     Log()->Error(APP_LOG_EMERG, 0, E.what());
                 }
             };
 
             auto OnException = [this](CPQPollQuery *APollQuery, const Delphi::Exception::Exception &E) {
-                m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / SecsPerDay;
+                m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / MSecsPerDay;
                 Log()->Error(APP_LOG_EMERG, 0, E.what());
             };
 
@@ -224,7 +224,7 @@ namespace Apostol {
             try {
                 ExecSQL(SQL, nullptr, OnExecuted, OnException);
             } catch (Delphi::Exception::Exception &E) {
-                m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / SecsPerDay;
+                m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / MSecsPerDay;
                 Log()->Error(APP_LOG_EMERG, 0, E.what());
             }
         }
@@ -330,7 +330,7 @@ namespace Apostol {
             auto now = Now();
             if ((now >= m_CheckDate)) {
                 if (m_Auth.Session.IsEmpty()) {
-                    m_CheckDate = now + (CDateTime) m_HeartbeatInterval / SecsPerDay;
+                    m_CheckDate = now + (CDateTime) m_HeartbeatInterval / MSecsPerDay;
                     Authorize();
                 }
             }
