@@ -187,7 +187,7 @@ namespace Apostol {
                         m_Auth.Secret = Json["secret"].AsString();
                         m_Auth.Token = Json["access_token"].AsString();
 
-                        m_CheckDate = Now() + (CDateTime) 23 * 60 / MinsPerDay;
+                        m_CheckDate = Now() + (CDateTime) 23 / HoursPerDay;
                     }
                 } catch (Delphi::Exception::Exception &E) {
                     m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / MSecsPerDay;
@@ -200,7 +200,7 @@ namespace Apostol {
                 Log()->Error(APP_LOG_EMERG, 0, E.what());
             };
 
-            CString Application("web");
+            CString Application("service");
 
             const auto &Providers = Server().Providers();
             const auto &Provider = Providers.Default().Value();
@@ -265,9 +265,9 @@ namespace Apostol {
 
             CStringList SQL;
 
-            SQL.Add(CString().Format("SELECT * FROM daemon.fetch(%s, '%s', '%s'::jsonb, %s, %s);",
+            SQL.Add(CString().Format("SELECT * FROM daemon.fetch(%s, 'POST', '%s', '%s'::jsonb, %s, %s);",
                                      PQQuoteLiteral(m_Auth.Token).c_str(),
-                                     "/verification/email/confirm",
+                                     "/api/v1/verification/email/confirm",
                                      Payload.c_str(),
                                      PQQuoteLiteral(m_Auth.Agent).c_str(),
                                      PQQuoteLiteral(m_Auth.Host).c_str()
@@ -338,7 +338,7 @@ namespace Apostol {
         //--------------------------------------------------------------------------------------------------------------
 
         void CConfirmEmail::InitConfig(const CIniFile &IniFile, const CString &Section, CStringList &Config) {
-            LPCTSTR lpDefaultUri = _T("/verification/email");
+            LPCTSTR lpDefaultUri = _T("/api/v1/verification/email");
 
             if (Section == "main") {
                 Config.AddPair("mode", IniFile.ReadString(Section.c_str(), "mode", "site"));
