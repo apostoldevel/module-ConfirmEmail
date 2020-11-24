@@ -183,9 +183,9 @@ namespace Apostol {
 
                         const CJSON Json(Result->GetValue(0, 0));
 
-                        m_Auth.Session = Json["session"].AsString();
-                        m_Auth.Secret = Json["secret"].AsString();
-                        m_Auth.Token = Json["access_token"].AsString();
+                        m_Auth.Values("session", Json["session"].AsString());
+                        m_Auth.Values("secret", Json["secret"].AsString());
+                        m_Auth.Values("access_token", Json["access_token"].AsString());
 
                         m_CheckDate = Now() + (CDateTime) 23 / HoursPerDay;
                     }
@@ -204,21 +204,27 @@ namespace Apostol {
 
             const auto &Providers = Server().Providers();
             const auto &Provider = Providers.Default().Value();
+            
+            const auto &username = Provider.ClientId(Application);
+            const auto &password = Provider.Secret(Application);
 
-            m_Auth.Username = Provider.ClientId(Application);
-            m_Auth.Password = Provider.Secret(Application);
+            const auto &agent = CString("Confirm email");
+            const auto &host = CApostolModule::GetIPByHostName(CApostolModule::GetHostName());
 
-            m_Auth.Agent = "Confirm email";
-            m_Auth.Host = CApostolModule::GetIPByHostName(CApostolModule::GetHostName());
+            m_Auth.Values("username", username);
+            m_Auth.Values("password", password);
+
+            m_Auth.Values("agent", agent);
+            m_Auth.Values("host", host);
 
             CStringList SQL;
 
             SQL.Add(CString().Format("SELECT * FROM daemon.token(%s, %s, '%s'::jsonb, %s, %s);",
-                                     PQQuoteLiteral(m_Auth.Username).c_str(),
-                                     PQQuoteLiteral(m_Auth.Password).c_str(),
+                                     PQQuoteLiteral(username).c_str(),
+                                     PQQuoteLiteral(password).c_str(),
                                      R"({"grant_type": "client_credentials"})",
-                                     PQQuoteLiteral(m_Auth.Agent).c_str(),
-                                     PQQuoteLiteral(m_Auth.Host).c_str()
+                                     PQQuoteLiteral(agent).c_str(),
+                                     PQQuoteLiteral(host).c_str()
             ));
 
             try {
@@ -234,17 +240,17 @@ namespace Apostol {
 
             auto OnExecuted = [this, AConnection](CPQPollQuery *APollQuery) {
 
-                CPQResult *LResult;
+                CPQResult *pResult;
 
                 try {
                     for (int I = 0; I < APollQuery->Count(); I++) {
-                        LResult = APollQuery->Results(I);
+                        pResult = APollQuery->Results(I);
 
-                        if (LResult->ExecStatus() != PGRES_TUPLES_OK)
-                            throw Delphi::Exception::EDBError(LResult->GetErrorMessage());
+                        if (pResult->ExecStatus() != PGRES_TUPLES_OK)
+                            throw Delphi::Exception::EDBError(pResult->GetErrorMessage());
 
                         CString ErrorMessage;
-                        const CJSON Payload(LResult->GetValue(0, 0));
+                        const CJSON Payload(pResult->GetValue(0, 0));
                         auto Status = ErrorCodeToStatus(CheckError(Payload, ErrorMessage));
                         if (Status == CHTTPReply::ok) {
                             const auto &Result = Payload["result"].AsString();
@@ -266,11 +272,11 @@ namespace Apostol {
             CStringList SQL;
 
             SQL.Add(CString().Format("SELECT * FROM daemon.fetch(%s, 'POST', '%s', '%s'::jsonb, %s, %s);",
-                                     PQQuoteLiteral(m_Auth.Token).c_str(),
+                                     PQQuoteLiteral(m_Auth["access_token"]).c_str(),
                                      "/api/v1/verification/email/confirm",
                                      Payload.c_str(),
-                                     PQQuoteLiteral(m_Auth.Agent).c_str(),
-                                     PQQuoteLiteral(m_Auth.Host).c_str()
+                                     PQQuoteLiteral(m_Auth["agent"]).c_str(),
+                                     PQQuoteLiteral(m_Auth["host"]).c_str()
             ));
 
             try {
@@ -329,7 +335,7 @@ namespace Apostol {
         void CConfirmEmail::Heartbeat() {
             auto now = Now();
             if ((now >= m_CheckDate)) {
-                if (m_Auth.Session.IsEmpty()) {
+                if (m_Auth["access_token"].IsEmpty()) {
                     m_CheckDate = now + (CDateTime) m_HeartbeatInterval / MSecsPerDay;
                     Authorize();
                 }

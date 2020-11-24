@@ -64,7 +64,7 @@ namespace Apostol {
         class CConfirmEmail: public CApostolModule {
         private:
 
-            CAuth m_Auth;
+            CStringPairs m_Auth;
 
             CDateTime m_CheckDate;
 
