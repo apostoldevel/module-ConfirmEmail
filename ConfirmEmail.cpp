@@ -183,55 +183,40 @@ namespace Apostol {
 
                         const CJSON Json(Result->GetValue(0, 0));
 
-                        m_Auth.Values("session", Json["session"].AsString());
-                        m_Auth.Values("secret", Json["secret"].AsString());
-                        m_Auth.Values("access_token", Json["access_token"].AsString());
-
+                        m_Token = Json["access_token"].AsString();
                         m_CheckDate = Now() + (CDateTime) 23 / HoursPerDay;
                     }
                 } catch (Delphi::Exception::Exception &E) {
-                    m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / MSecsPerDay;
-                    Log()->Error(APP_LOG_EMERG, 0, E.what());
+                    DoError(E);
                 }
             };
 
             auto OnException = [this](CPQPollQuery *APollQuery, const Delphi::Exception::Exception &E) {
-                m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / MSecsPerDay;
-                Log()->Error(APP_LOG_EMERG, 0, E.what());
+                DoError(E);
             };
 
             CString Application("service");
 
             const auto &Providers = Server().Providers();
-            const auto &Provider = Providers.Default().Value();
+            const auto &Provider = Providers.DefaultValue();
             
-            const auto &username = Provider.ClientId(Application);
-            const auto &password = Provider.Secret(Application);
-
-            const auto &agent = CString("Confirm email");
-            const auto &host = CApostolModule::GetIPByHostName(CApostolModule::GetHostName());
-
-            m_Auth.Values("username", username);
-            m_Auth.Values("password", password);
-
-            m_Auth.Values("agent", agent);
-            m_Auth.Values("host", host);
+            const auto &client_id = Provider.ClientId(Application);
+            const auto &client_secret = Provider.Secret(Application);
 
             CStringList SQL;
 
             SQL.Add(CString().Format("SELECT * FROM daemon.token(%s, %s, '%s'::jsonb, %s, %s);",
-                                     PQQuoteLiteral(username).c_str(),
-                                     PQQuoteLiteral(password).c_str(),
+                                     PQQuoteLiteral(client_id).c_str(),
+                                     PQQuoteLiteral(client_secret).c_str(),
                                      R"({"grant_type": "client_credentials"})",
-                                     PQQuoteLiteral(agent).c_str(),
-                                     PQQuoteLiteral(host).c_str()
+                                     PQQuoteLiteral(m_Agent).c_str(),
+                                     PQQuoteLiteral(m_Host).c_str()
             ));
 
             try {
                 ExecSQL(SQL, nullptr, OnExecuted, OnException);
             } catch (Delphi::Exception::Exception &E) {
-                m_CheckDate = Now() + (CDateTime) m_HeartbeatInterval * 3 / MSecsPerDay;
-                Log()->Error(APP_LOG_EMERG, 0, E.what());
+                DoError(E);
             }
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -272,11 +257,11 @@ namespace Apostol {
             CStringList SQL;
 
             SQL.Add(CString().Format("SELECT * FROM daemon.fetch(%s, 'POST', '%s', '%s'::jsonb, %s, %s);",
-                                     PQQuoteLiteral(m_Auth["access_token"]).c_str(),
+                                     PQQuoteLiteral(m_Token).c_str(),
                                      "/api/v1/verification/email/confirm",
                                      Payload.c_str(),
-                                     PQQuoteLiteral(m_Auth["agent"]).c_str(),
-                                     PQQuoteLiteral(m_Auth["host"]).c_str()
+                                     PQQuoteLiteral(m_Agent).c_str(),
+                                     PQQuoteLiteral(m_Host).c_str()
             ));
 
             try {
@@ -288,7 +273,7 @@ namespace Apostol {
         //--------------------------------------------------------------------------------------------------------------
 
         void CConfirmEmail::DoError(const Delphi::Exception::Exception &E) {
-            m_Auth.Clear();
+            m_Token.Clear();
             m_CheckDate = Now();
             Log()->Error(APP_LOG_EMERG, 0, E.what());
         }
@@ -335,7 +320,7 @@ namespace Apostol {
         void CConfirmEmail::Heartbeat() {
             auto now = Now();
             if ((now >= m_CheckDate)) {
-                if (m_Auth["access_token"].IsEmpty()) {
+                if (m_Token.IsEmpty()) {
                     m_CheckDate = now + (CDateTime) m_HeartbeatInterval / MSecsPerDay;
                     Authorize();
                 }
@@ -359,6 +344,10 @@ namespace Apostol {
 
         void CConfirmEmail::Initialization(CModuleProcess *AProcess) {
             CApostolModule::Initialization(AProcess);
+
+            m_Agent = "Confirm email";
+            m_Host = CApostolModule::GetIPByHostName(CApostolModule::GetHostName());
+
             LoadConfig(Config()->IniFile().ReadString(SectionName().c_str(), "config", "conf/confirm_email.conf"), m_Profiles, InitConfig);
         }
         //--------------------------------------------------------------------------------------------------------------

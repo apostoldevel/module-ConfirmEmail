@@ -31,30 +31,6 @@ namespace Apostol {
 
     namespace Workers {
 
-        struct CAuth {
-            CString Username;
-            CString Password;
-
-            CString Agent;
-            CString Host;
-
-            CString Session;
-            CString Secret;
-            CString Token;
-
-            void Clear() {
-                Username.Clear();
-                Password.Clear();
-
-                Agent.Clear();
-                Host.Clear();
-
-                Session.Clear();
-                Secret.Clear();
-                Token.Clear();
-            }
-        };
-
         //--------------------------------------------------------------------------------------------------------------
 
         //-- CConfirmEmail ---------------------------------------------------------------------------------------------
@@ -64,7 +40,9 @@ namespace Apostol {
         class CConfirmEmail: public CApostolModule {
         private:
 
-            CStringPairs m_Auth;
+            CString m_Token;
+            CString m_Agent;
+            CString m_Host;
 
             CDateTime m_CheckDate;
 
@@ -76,12 +54,15 @@ namespace Apostol {
 
             void InitMethods() override;
 
-            void Authorize();
-
             static CHTTPReply::CStatusType ErrorCodeToStatus(int ErrorCode);
             static int CheckError(const CJSON &Json, CString &ErrorMessage, bool RaiseIfError = false);
 
+            void RedirectConfirm(CHTTPServerConnection *AConnection, const CString &Result, const CString &Message);
+            void RedirectError(CHTTPServerConnection *AConnection, int ErrorCode, const CString &Error, const CString &Message);
+
             void ConfirmEmail(CHTTPServerConnection *AConnection, const CString &Payload);
+
+            static void InitConfig(const CIniFile &IniFile, const CString &Profile, CStringList &Config);
 
         protected:
 
@@ -99,10 +80,7 @@ namespace Apostol {
                 return new CConfirmEmail(AProcess);
             }
 
-            void RedirectConfirm(CHTTPServerConnection *AConnection, const CString &Result, const CString &Message);
-            void RedirectError(CHTTPServerConnection *AConnection, int ErrorCode, const CString &Error, const CString &Message);
-
-            static void InitConfig(const CIniFile &IniFile, const CString &Profile, CStringList &Config);
+            void Authorize();
 
             void Initialization(CModuleProcess *AProcess) override;
 
