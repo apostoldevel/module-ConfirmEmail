@@ -44,13 +44,15 @@ namespace Apostol {
             CString m_Agent;
             CString m_Host;
 
-            CDateTime m_CheckDate;
+            CDateTime m_AuthDate;
 
             TPairs<CStringList> m_Profiles;
 
             CHTTPProxyManager m_ProxyManager;
 
             int m_HeartbeatInterval;
+
+            void Authentication();
 
             void InitMethods() override;
 
@@ -79,8 +81,6 @@ namespace Apostol {
             static class CConfirmEmail *CreateModule(CModuleProcess *AProcess) {
                 return new CConfirmEmail(AProcess);
             }
-
-            void Authorize();
 
             void Initialization(CModuleProcess *AProcess) override;
 

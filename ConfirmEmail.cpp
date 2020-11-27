@@ -27,6 +27,8 @@ Author:
 #include "ConfirmEmail.hpp"
 //----------------------------------------------------------------------------------------------------------------------
 
+#define PROVIDER_APPLICATION_NAME "service"
+
 extern "C++" {
 
 namespace Apostol {
@@ -44,7 +46,7 @@ namespace Apostol {
 
             CConfirmEmail::InitMethods();
 
-            m_CheckDate = Now();
+            m_AuthDate = Now();
             m_HeartbeatInterval = 5000;
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -167,7 +169,7 @@ namespace Apostol {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CConfirmEmail::Authorize() {
+        void CConfirmEmail::Authentication() {
 
             auto OnExecuted = [this](CPQPollQuery *APollQuery) {
 
@@ -184,7 +186,7 @@ namespace Apostol {
                         const CJSON Json(Result->GetValue(0, 0));
 
                         m_Token = Json["access_token"].AsString();
-                        m_CheckDate = Now() + (CDateTime) 23 / HoursPerDay;
+                        m_AuthDate = Now() + (CDateTime) 23 / HoursPerDay;
                     }
                 } catch (Delphi::Exception::Exception &E) {
                     DoError(E);
@@ -195,7 +197,7 @@ namespace Apostol {
                 DoError(E);
             };
 
-            CString Application("service");
+            CString Application(PROVIDER_APPLICATION_NAME);
 
             const auto &Providers = Server().Providers();
             const auto &Provider = Providers.DefaultValue();
@@ -274,7 +276,7 @@ namespace Apostol {
 
         void CConfirmEmail::DoError(const Delphi::Exception::Exception &E) {
             m_Token.Clear();
-            m_CheckDate = Now();
+            m_AuthDate = Now();
             Log()->Error(APP_LOG_EMERG, 0, E.what());
         }
         //--------------------------------------------------------------------------------------------------------------
@@ -319,10 +321,10 @@ namespace Apostol {
 
         void CConfirmEmail::Heartbeat() {
             auto now = Now();
-            if ((now >= m_CheckDate)) {
+            if ((now >= m_AuthDate)) {
                 if (m_Token.IsEmpty()) {
-                    m_CheckDate = now + (CDateTime) m_HeartbeatInterval / MSecsPerDay;
-                    Authorize();
+                    m_AuthDate = now + (CDateTime) m_HeartbeatInterval / MSecsPerDay;
+                    Authentication();
                 }
             }
         }
