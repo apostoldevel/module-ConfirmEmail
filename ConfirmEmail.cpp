@@ -149,7 +149,7 @@ namespace Apostol {
 
             Redirect(AConnection, Location, true);
 
-            Log()->Error(APP_LOG_EMERG, 0, _T("RedirectConfirm: %s"), Message.c_str());
+            Log()->Error(APP_LOG_INFO, 0, _T("RedirectConfirm: %s"), Message.c_str());
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -165,7 +165,7 @@ namespace Apostol {
 
             Redirect(AConnection, ErrorLocation, true);
 
-            Log()->Error(APP_LOG_EMERG, 0, _T("RedirectError: %s"), Message.c_str());
+            Log()->Error(APP_LOG_ERR, 0, _T("RedirectError: %s"), Message.c_str());
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -277,7 +277,7 @@ namespace Apostol {
         void CConfirmEmail::DoError(const Delphi::Exception::Exception &E) {
             m_Token.Clear();
             m_AuthDate = Now();
-            Log()->Error(APP_LOG_EMERG, 0, E.what());
+            Log()->Error(APP_LOG_ERR, 0, "%s", E.what());
         }
         //--------------------------------------------------------------------------------------------------------------
 
