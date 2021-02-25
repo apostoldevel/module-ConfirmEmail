@@ -46,7 +46,7 @@ namespace Apostol {
 
             CDateTime m_AuthDate;
 
-            TPairs<CStringList> m_Profiles;
+            CStringListPairs m_Profiles;
 
             CHTTPProxyManager m_ProxyManager;
 
