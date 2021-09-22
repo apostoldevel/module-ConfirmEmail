@@ -48,8 +48,6 @@ namespace Apostol {
 
             CStringListPairs m_Profiles;
 
-            CHTTPProxyManager m_ProxyManager;
-
             int m_HeartbeatInterval;
 
             void Authentication();
