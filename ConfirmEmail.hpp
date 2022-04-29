@@ -82,7 +82,7 @@ namespace Apostol {
 
             void Initialization(CModuleProcess *AProcess) override;
 
-            void Heartbeat() override;
+            void Heartbeat(CDateTime DateTime) override;
 
             bool Enabled() override;
             bool CheckLocation(const CLocation &Location) override;

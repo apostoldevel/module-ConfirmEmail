@@ -319,11 +319,10 @@ namespace Apostol {
         }
         //--------------------------------------------------------------------------------------------------------------
 
-        void CConfirmEmail::Heartbeat() {
-            auto now = Now();
-            if ((now >= m_AuthDate)) {
+        void CConfirmEmail::Heartbeat(CDateTime DateTime) {
+            if ((DateTime >= m_AuthDate)) {
                 if (m_Token.IsEmpty()) {
-                    m_AuthDate = now + (CDateTime) m_HeartbeatInterval / MSecsPerDay;
+                    m_AuthDate = DateTime + (CDateTime) m_HeartbeatInterval / MSecsPerDay;
                     Authentication();
                 }
             }
