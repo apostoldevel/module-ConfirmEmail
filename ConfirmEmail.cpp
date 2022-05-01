@@ -33,7 +33,7 @@ extern "C++" {
 
 namespace Apostol {
 
-    namespace Workers {
+    namespace Module {
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -41,9 +41,7 @@ namespace Apostol {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        CConfirmEmail::CConfirmEmail(CModuleProcess *AProcess) : CApostolModule(AProcess,
-                "confirm email", "worker/ConfirmEmail") {
-
+        CConfirmEmail::CConfirmEmail(CModuleProcess *AProcess) : CApostolModule(AProcess, "confirm email", "module/ConfirmEmail") {
             CConfirmEmail::InitMethods();
 
             m_AuthDate = Now();

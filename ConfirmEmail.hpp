@@ -29,7 +29,7 @@ extern "C++" {
 
 namespace Apostol {
 
-    namespace Workers {
+    namespace Module {
 
         //--------------------------------------------------------------------------------------------------------------
 
@@ -91,6 +91,6 @@ namespace Apostol {
     }
 }
 
-using namespace Apostol::Workers;
+using namespace Apostol::Module;
 }
 #endif //APOSTOL_CONFIRM_EMAIL_HPP
