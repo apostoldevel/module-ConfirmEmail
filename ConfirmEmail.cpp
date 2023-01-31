@@ -280,9 +280,9 @@ namespace Apostol {
         //--------------------------------------------------------------------------------------------------------------
 
         void CConfirmEmail::DoGet(CHTTPServerConnection *AConnection) {
-            auto LRequest = AConnection->Request();
+            const auto &caRequest = AConnection->Request();
 
-            CString LPath(LRequest->Location.pathname);
+            CString LPath(caRequest.Location.pathname);
 
             // Request path must be absolute and not contain "..".
             if (LPath.empty() || LPath.front() != '/' || LPath.find(_T("..")) != CString::npos) {
